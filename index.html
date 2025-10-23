@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Chemicraft — Mobile Lab</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div id="notif" aria-live="polite"></div>
+
+  <header>
+    <div class="left">
+      <button id="openToolbar" class="btn">⚗️ Elements</button>
+      <h1>🔬 Chemicraft</h1>
+      <span class="hint">Tap to spawn • Drag to combine</span>
+    </div>
+    <div class="controls">
+      <button id="toggleSound" class="btn ghost">🔊 Ambient: On</button>
+      <button id="openAchievements" class="btn">🏆 Discoveries</button>
+      <button id="clearBoard" class="btn warn">🧹 Clear</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="board" aria-label="Lab workspace"></div>
+  </main>
+
+  <!-- Toolbar (slides up) -->
+  <div id="toolbarWrap">
+    <div id="toolbar" aria-hidden="true">
+      <div id="toolbarHeader">
+        <div class="title">Elements & Compounds</div>
+        <input id="search" placeholder="Search..." />
+        <select id="category">
+          <option value="All">All</option>
+          <option value="Elements">Elements</option>
+          <option value="Compounds">Compounds</option>
+          <option value="Environmental">Environmental</option>
+        </select>
+      </div>
+      <div id="elementGrid" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <!-- Achievements -->
+  <aside id="achievements" style="display:none">
+    <h3>🏆 Discoveries</h3>
+    <div id="discoveredList"></div>
+    <hr/>
+    <div id="suggestions"></div>
+  </aside>
+
+  <div id="hint">Tip: open Elements → tap an icon to spawn. Drag one onto another to combine.</div>
+
+  <!-- scripts: load order matters -->
+  <script src="data.js"></script>
+  <script src="logic.js"></script>
+</body>
+</html>
