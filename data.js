@@ -1,122 +1,73 @@
-/* data.js — Chemicraft v4
-   Full periodic table (visible but locked), expanded combinations
+/* data.js — Chemicraft Stable v1
+   Contains base elements, unlock system, and beginner recipes
+   Must load before logic.js
 */
 
-// ---------- ELEMENTS ----------
-const elements = [
-  // Grouped by category
-  ["H", "Hydrogen"], ["He", "Helium"], ["Li", "Lithium"], ["Be", "Beryllium"], ["B", "Boron"],
-  ["C", "Carbon"], ["N", "Nitrogen"], ["O", "Oxygen"], ["F", "Fluorine"], ["Ne", "Neon"],
-  ["Na", "Sodium"], ["Mg", "Magnesium"], ["Al", "Aluminum"], ["Si", "Silicon"], ["P", "Phosphorus"],
-  ["S", "Sulfur"], ["Cl", "Chlorine"], ["Ar", "Argon"], ["K", "Potassium"], ["Ca", "Calcium"],
-  ["Fe", "Iron"], ["Cu", "Copper"], ["Zn", "Zinc"], ["Ag", "Silver"], ["Au", "Gold"],
-  ["Pb", "Lead"], ["Hg", "Mercury"], ["U", "Uranium"], ["Pt", "Platinum"], ["Ni", "Nickel"],
-  ["Sn", "Tin"], ["I", "Iodine"], ["Br", "Bromine"], ["Si", "Silicon"], ["Ti", "Titanium"],
-  ["Cr", "Chromium"], ["Mn", "Manganese"], ["Co", "Cobalt"], ["V", "Vanadium"], ["W", "Tungsten"]
+// ===== Global Data =====
+window.items = [
+  // --- Starter Elements (Unlocked) ---
+  { sym: "H", name: "Hydrogen", category: "Element", emoji: "⚪", unlocked: true },
+  { sym: "O", name: "Oxygen", category: "Element", emoji: "🔵", unlocked: true },
+  { sym: "C", name: "Carbon", category: "Element", emoji: "⚫", unlocked: true },
+  { sym: "N", name: "Nitrogen", category: "Element", emoji: "🟣", unlocked: true },
+  { sym: "Fire", name: "Fire", category: "Energy", emoji: "🔥", unlocked: true },
+  { sym: "Air", name: "Air", category: "Energy", emoji: "💨", unlocked: true },
+
+  // --- Locked Elements ---
+  { sym: "Na", name: "Sodium", category: "Element", emoji: "⚪", unlocked: false },
+  { sym: "Cl", name: "Chlorine", category: "Element", emoji: "🟢", unlocked: false },
+  { sym: "Fe", name: "Iron", category: "Element", emoji: "⚙️", unlocked: false },
+  { sym: "Au", name: "Gold", category: "Element", emoji: "🟡", unlocked: false },
+  { sym: "Ag", name: "Silver", category: "Element", emoji: "⚪", unlocked: false },
+  { sym: "S", name: "Sulfur", category: "Element", emoji: "🟠", unlocked: false },
+  { sym: "Si", name: "Silicon", category: "Element", emoji: "🪨", unlocked: false },
+  { sym: "Cu", name: "Copper", category: "Element", emoji: "🟤", unlocked: false },
+  { sym: "Zn", name: "Zinc", category: "Element", emoji: "⚪", unlocked: false },
+
+  // --- Compounds (Discovered later) ---
+  { sym: "H2O", name: "Water", category: "Compound", emoji: "💧", unlocked: false },
+  { sym: "CO2", name: "Carbon Dioxide", category: "Compound", emoji: "🌫️", unlocked: false },
+  { sym: "NaCl", name: "Salt", category: "Compound", emoji: "🧂", unlocked: false },
+  { sym: "FeO", name: "Iron Oxide", category: "Compound", emoji: "🟥", unlocked: false },
+  { sym: "H2", name: "Hydrogen Gas", category: "Compound", emoji: "💨", unlocked: false },
+  { sym: "O2", name: "Oxygen Gas", category: "Compound", emoji: "💨", unlocked: false },
+  { sym: "SO2", name: "Sulfur Dioxide", category: "Compound", emoji: "🌋", unlocked: false },
+  { sym: "Energy", name: "Energy", category: "Energy", emoji: "⚡", unlocked: false },
+  { sym: "Steam", name: "Steam", category: "Compound", emoji: "🌫️", unlocked: false },
 ];
 
-// ---------- STARTER UNLOCKS ----------
-const starterUnlocked = ["H", "O", "C", "N", "Fire", "Air"];
-
-// ---------- BASE ITEMS ----------
-const items = [];
-
-// Elements
-for (const [sym, name] of elements) {
-  items.push({
-    sym,
-    name,
-    emoji: "⚪",
-    category: "Elements",
-    unlocked: starterUnlocked.includes(sym)
-  });
-}
-
-// Environmental
-items.push({ sym: "Fire", name: "Fire", emoji: "🔥", category: "Environmental", unlocked: true });
-items.push({ sym: "Air", name: "Air", emoji: "💨", category: "Environmental", unlocked: true });
-items.push({ sym: "Earth", name: "Earth", emoji: "🌍", category: "Environmental", unlocked: false });
-items.push({ sym: "Water", name: "Water", emoji: "💧", category: "Environmental", unlocked: false });
-items.push({ sym: "Energy", name: "Energy", emoji: "⚡", category: "Force", unlocked: false });
-
-// ---------- BASIC COMPOUNDS ----------
-const baseCompounds = [
-  ["H2", "Hydrogen Gas", "💨"],
-  ["O2", "Oxygen Gas", "🫧"],
-  ["H2O", "Water", "💧"],
-  ["CO2", "Carbon Dioxide", "🌫️"],
-  ["NH3", "Ammonia", "💨"],
-  ["CH4", "Methane", "🔥"],
-  ["NaCl", "Salt", "🧂"],
-  ["Rust", "Rust", "🟫"],
-  ["Steam", "Steam", "☁️"],
-  ["Explosion", "Explosion", "💥"],
-  ["SaltWater", "Salt Water", "🌊"],
-  ["Acid", "Acid", "🧪"],
-  ["Glass", "Glass", "🔹"],
-  ["Lava", "Lava", "🌋"],
-  ["Stone", "Stone", "🪨"],
-  ["Sand", "Sand", "🏖️"],
-  ["Plant", "Plant", "🌱"],
-  ["Life", "Life", "🧬"]
-];
-for (const [sym, name, emoji] of baseCompounds) {
-  items.push({ sym, name, emoji, category: "Compounds", unlocked: false });
-}
-
-// ---------- RECIPES ----------
-const recipes = [
-  // Elemental
+// ===== Recipes =====
+window.recipes = [
+  // --- Basic Chemistry ---
   { inputs: ["H", "H"], output: "H2" },
   { inputs: ["O", "O"], output: "O2" },
   { inputs: ["H", "O"], output: "H2O" },
-  { inputs: ["C", "O"], output: "CO2" },
-  { inputs: ["N", "H"], output: "NH3" },
-  { inputs: ["C", "H"], output: "CH4" },
+  { inputs: ["C", "O2"], output: "CO2" },
   { inputs: ["Na", "Cl"], output: "NaCl" },
-  { inputs: ["Fe", "O"], output: "Rust" },
+  { inputs: ["Fe", "O"], output: "FeO" },
+  { inputs: ["S", "O2"], output: "SO2" },
 
-  // Environmental & physical
-  { inputs: ["H2O", "Fire"], output: "Steam" },
-  { inputs: ["Fire", "O2"], output: "Explosion" },
-  { inputs: ["Earth", "Fire"], output: "Lava" },
-  { inputs: ["Lava", "Air"], output: "Stone" },
-  { inputs: ["Earth", "Air"], output: "Dust" },
-  { inputs: ["Earth", "Water"], output: "Mud" },
-  { inputs: ["Mud", "Fire"], output: "Clay" },
-  { inputs: ["Clay", "Fire"], output: "Brick" },
-  { inputs: ["Sand", "Fire"], output: "Glass" },
-  { inputs: ["Water", "NaCl"], output: "SaltWater" },
-  { inputs: ["CO2", "H2O"], output: "Acid" },
-
-  // Energy-related
+  // --- Fun / Sandbox Reactions ---
   { inputs: ["Fire", "Air"], output: "Energy" },
-  { inputs: ["Energy", "O2"], output: "Plasma" },
-  { inputs: ["Energy", "Earth"], output: "Metal" },
-  { inputs: ["Energy", "Water"], output: "Electricity" },
-
-  // Life chain
-  { inputs: ["Earth", "Water"], output: "Mud" },
-  { inputs: ["Mud", "Energy"], output: "Plant" },
-  { inputs: ["Plant", "Energy"], output: "Life" },
-  { inputs: ["Life", "Fire"], output: "Ash" },
-  { inputs: ["Life", "Water"], output: "Bacteria" },
+  { inputs: ["H2O", "Energy"], output: "Steam" },
+  { inputs: ["C", "Energy"], output: "Fire" },
+  { inputs: ["O2", "Fire"], output: "CO2" },
 ];
 
-// ---------- SAVE SYSTEM ----------
-function saveUnlocks() {
+// ===== Save / Load Unlocks =====
+window.saveUnlocks = function() {
   try {
     const unlocked = items.filter(i => i.unlocked).map(i => i.sym);
     localStorage.setItem("chemicraft_unlocks", JSON.stringify(unlocked));
-  } catch (e) { console.warn("Save failed:", e); }
-}
+  } catch (e) { console.warn("Save failed", e); }
+};
 
-function loadUnlocks() {
+window.loadUnlocks = function() {
   try {
     const data = JSON.parse(localStorage.getItem("chemicraft_unlocks") || "[]");
-    items.forEach(it => it.unlocked = data.includes(it.sym) || starterUnlocked.includes(it.sym));
-  } catch (e) { console.warn("Load failed:", e); }
-}
+    items.forEach(i => { if (data.includes(i.sym)) i.unlocked = true; });
+  } catch (e) { console.warn("Load failed", e); }
+};
 
-// Load saved unlocks
+// Auto-load when script runs
 loadUnlocks();
