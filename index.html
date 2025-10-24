@@ -1,117 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Chemicraft v2 — Clean Lab</title>
-<style>
-:root{
-  --bg:#041421; --fg:#e6f8ff; --muted:#8ea7bf; --accent:#00aaff; --danger:#ef4444;
-}
-*{box-sizing:border-box}
-html,body{height:100%;margin:0;font-family:Inter,system-ui,Roboto,Arial;background:var(--bg);color:var(--fg);overflow:hidden}
-
-/* top title */
-header.title{height:48px;display:flex;align-items:center;justify-content:center;background:linear-gradient(90deg,#003b5c,#001824);font-weight:700;letter-spacing:1px}
-
-/* board */
-#board{position:fixed;inset:48px 0 0 0;background:
-  radial-gradient(ellipse at center, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0) 40%),
-  linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.04)); z-index:1;}
-
-/* nodes */
-.node{position:absolute;width:72px;height:72px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:28px;background:linear-gradient(180deg,#1f90ff,#1766c7);color:#fff;font-weight:800;box-shadow:0 12px 30px rgba(0,0,0,.6);touch-action:none;user-select:none;cursor:grab;z-index:2}
-.node.compound{background:linear-gradient(180deg,#16a085,#0aa0a0)}
-
-/* notification */
-#notif{position:fixed;left:50%;top:60px;transform:translateX(-50%);background:rgba(0,0,0,.6);padding:8px 12px;border-radius:10px;display:none;z-index:120;color:var(--fg)}
-
-/* toolbar (bottom) */
-#toolbar{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(180deg,#052a36,#01303a);border-top-left-radius:12px;border-top-right-radius:12px;padding:10px;max-height:48vh;box-shadow:0 -8px 30px rgba(0,0,0,.6);transform:translateY(100%);transition:transform .28s ease;z-index:100}
-/* IMPORTANT: when closed it must not intercept clicks */
-#toolbar{pointer-events:none}
-#toolbar.open{transform:translateY(0);pointer-events:auto}
-
-/* toolbar header & grid */
-#toolbar header{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-bottom:8px}
-#elementGrid{display:flex;gap:8px;flex-wrap:wrap;overflow:auto;padding:6px}
-.elem{width:64px;height:64px;border-radius:10px;background:linear-gradient(180deg,#063b4c,#024a5d);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;color:#eaffff;box-shadow:0 6px 18px rgba(0,0,0,.4)}
-.elem.locked{opacity:.22;filter:grayscale(.4);cursor:not-allowed}
-
-/* hint */
-#hint{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:rgba(0,0,0,.4);padding:8px 12px;border-radius:8px;color:#dff3ff;font-size:13px;z-index:90;opacity:0;transition:opacity .45s}
-
-/* settings modal (combines achievements + ambience) */
-#settingsPanel{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:92%;max-width:420px;background:rgba(2,18,28,.98);border-radius:12px;padding:12px;box-shadow:0 12px 40px rgba(0,0,0,.7);z-index:140;display:none;color:var(--fg)}
-#settingsPanel h3{margin:0 0 8px 0}
-.setting-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid rgba(255,255,255,0.02)}
-#settingsAchievements{min-height:48px;max-height:160px;overflow:auto;padding-top:8px}
-
-/* settings buttons */
-.btn{background:var(--accent);color:#022; border:0;padding:8px 10px;border-radius:8px;cursor:pointer;font-weight:700}
-.btn.ghost{background:transparent;color:var(--fg);border:1px solid rgba(255,255,255,0.04)}
-.btn.warn{background:var(--danger);color:#fff}
-
-/* small responsive */
-@media(max-width:520px){ .node{width:62px;height:62px;font-size:24px} #toolbar{padding:8px} }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chemicraft</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="title">CHEMICRAFT v2</header>
+  <div id="topbar">
+    <button id="openToolbar">⚗️ Elements</button>
+    <button id="openAchievements">🏆 Achievements</button>
+    <button id="openSettings">⚙️ Settings</button>
+  </div>
 
-  <div id="board" aria-label="Lab workspace"></div>
+  <div id="board"></div>
 
-  <!-- toolbar -->
-  <div id="toolbar" role="dialog" aria-hidden="true">
-    <header>
-      <div style="display:flex;gap:8px;align-items:center">
-        <strong>Elements</strong>
-        <span style="color:var(--muted);font-size:13px">• Tap to spawn</span>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <input id="search" placeholder="Search..." style="padding:6px;border-radius:8px;border:0;background:#021f26;color:#dff7ff" />
-        <select id="category" style="padding:6px;border-radius:8px;border:0;background:#021f26;color:#dff7ff">
-          <option>All</option>
-          <option>Elements</option>
-          <option>Compounds</option>
-        </select>
-      </div>
-    </header>
+  <div id="toolbar">
+    <input type="text" id="search" placeholder="Search elements...">
+    <select id="category">
+      <option>All</option>
+      <option>Elements</option>
+      <option>Compounds</option>
+    </select>
     <div id="elementGrid"></div>
   </div>
 
-  <!-- hint & notification -->
-  <div id="hint">Tip: tap "Lab" to open elements — tap an icon to spawn.</div>
-  <div id="notif" role="status" aria-live="polite"></div>
-
-  <!-- settings panel (achievements + ambient) -->
-  <div id="settingsPanel" role="dialog" aria-modal="true">
-    <h3>Settings & Discoveries</h3>
-    <div class="setting-row">
-      <div>Ambient</div>
-      <div>
-        <button id="ambientToggle" class="btn">Ambient: On</button>
-      </div>
-    </div>
-    <div class="setting-row" style="border-top:0;padding-top:10px">
-      <div style="width:100%"><strong>Discoveries</strong>
-        <div id="settingsAchievements" style="margin-top:8px"></div>
-      </div>
-    </div>
-    <div style="display:flex;justify-content:flex-end;margin-top:10px;gap:8px">
-      <button id="closeSettings" class="btn.ghost">Close</button>
-    </div>
+  <div id="achievements">
+    <h2>Achievements</h2>
+    <div id="discoveredList"></div>
   </div>
 
-  <!-- bottom lab button + quick controls -->
-  <button id="openToolbar" style="position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:110;background:var(--accent);color:#022;border:0;border-radius:26px;padding:8px 18px;font-weight:800;box-shadow:0 8px 30px rgba(0,170,255,0.12)">⚗️ Lab</button>
-
-  <div style="position:fixed;right:12px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:110">
-    <button id="openSettings" class="btn.ghost">⚙️ Settings</button>
-    <button id="clearBoard" class="btn.warn">🧹 Clear</button>
+  <div id="settings">
+    <h2>Settings</h2>
+    <button id="toggleAmbience">🔇 Ambient: Off</button>
+    <label><input type="checkbox" id="toggleNames"> Always show names</label>
   </div>
+
+  <div id="notif"></div>
 
   <script src="data.js"></script>
   <script src="logic.js"></script>
+  <script src="settings.js"></script>
 </body>
 </html>
