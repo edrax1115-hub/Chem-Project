@@ -1,66 +1,40 @@
-/* data.js — items, recipes, persistence */
+/* data.js — Chemicraft v2 base data */
 
-// items: symbol, emoji, name, category, unlocked (boolean)
-const baseItems = [
-  { sym: "H", emoji: "🟦", name: "Hydrogen", category: "Elements" },
-  { sym: "O", emoji: "🌬️", name: "Oxygen", category: "Elements" },
-  { sym: "N", emoji: "🌫️", name: "Nitrogen", category: "Elements" },
-  { sym: "C", emoji: "🪨", name: "Carbon", category: "Elements" },
-  { sym: "Na", emoji: "⚡", name: "Sodium", category: "Elements" },
-  { sym: "Cl", emoji: "☣️", name: "Chlorine", category: "Elements" },
-  { sym: "Fe", emoji: "🛠️", name: "Iron", category: "Elements" },
-  { sym: "S", emoji: "🟨", name: "Sulfur", category: "Elements" },
-
-  // environmental
-  { sym: "Air", emoji: "💨", name: "Air", category: "Environmental", unlocked: true },
-  { sym: "Fire", emoji: "🔥", name: "Fire", category: "Environmental", unlocked: true },
-
-  // compounds initially locked
-  { sym: "H2O", emoji: "💧", name: "Water", category: "Compounds", unlocked: false },
-  { sym: "CO2", emoji: "🌫️", name: "Carbon Dioxide", category: "Compounds", unlocked: false },
-  { sym: "NaCl", emoji: "🧂", name: "Salt", category: "Compounds", unlocked: false },
-  { sym: "NH3", emoji: "💨", name: "Ammonia", category: "Compounds", unlocked: false },
-  { sym: "CH4", emoji: "🔥", name: "Methane", category: "Compounds", unlocked: false },
-  { sym: "Saltwater", emoji: "🌊", name: "Saltwater", category: "Compounds", unlocked: false },
-  { sym: "Steam", emoji: "☁️", name: "Steam", category: "Compounds", unlocked: false },
-  { sym: "Rust", emoji: "🟫", name: "Rust", category: "Compounds", unlocked: false }
+const items = [
+  // === Starter Elements ===
+  { sym: "H", name: "Hydrogen", emoji: "🟦", category: "Elements", unlocked: true },
+  { sym: "O", name: "Oxygen", emoji: "🌬️", category: "Elements", unlocked: true },
+  { sym: "Fire", name: "Fire", emoji: "🔥", category: "Elements", unlocked: true },
+  // === Locked Compounds (discovered via play) ===
+  { sym: "H2O", name: "Water", emoji: "💧", category: "Compounds", unlocked: false },
+  { sym: "O2", name: "Oxygen Gas", emoji: "🫧", category: "Compounds", unlocked: false },
+  { sym: "Steam", name: "Steam", emoji: "🌫️", category: "Compounds", unlocked: false },
+  { sym: "Explosion", name: "Explosion", emoji: "💥", category: "Compounds", unlocked: false }
 ];
 
-// starter unlocked
-const starterUnlocked = ["H","O","N","C","Na","Cl","Air","Fire","Fe","S"];
-
-// items used by logic
-const items = baseItems.map(it => ({ ...it, unlocked: !!it.unlocked || starterUnlocked.includes(it.sym) }));
-
-// recipes (inputs array, output symbol)
+// === Recipes ===
+// Basic combinations — realistic but simple for now
 const recipes = [
-  { inputs: ["H","O"], output: "H2O" },
-  { inputs: ["C","O"], output: "CO2" },
-  { inputs: ["Na","Cl"], output: "NaCl" },
-  { inputs: ["N","H"], output: "NH3" },
-  { inputs: ["C","H"], output: "CH4" },
-  { inputs: ["NaCl","H2O"], output: "Saltwater" },
-  { inputs: ["H2O","Fire"], output: "Steam" },
-  { inputs: ["Fe","O"], output: "Rust" }
+  { inputs: ["H", "O"], output: "H2O" },
+  { inputs: ["H2O", "Fire"], output: "Steam" },
+  { inputs: ["O", "O"], output: "O2" },
+  { inputs: ["Fire", "O2"], output: "Explosion" }
 ];
 
-// local storage key
-const STORAGE_KEY = "chemicraft_unlocks_v2";
-
-function loadUnlocks(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    const arr = JSON.parse(raw);
-    items.forEach(it => { it.unlocked = arr.includes(it.sym) || !!it.unlocked; });
-  }catch(e){ console.warn("loadUnlocks failed", e); }
-}
-function saveUnlocks(){
-  try{
-    const arr = items.filter(i => i.unlocked).map(i => i.sym);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
-  }catch(e){ console.warn("saveUnlocks failed", e); }
+// === Save System ===
+function saveUnlocks() {
+  try {
+    const unlocked = items.filter(i => i.unlocked).map(i => i.sym);
+    localStorage.setItem('chemicraft_unlocks', JSON.stringify(unlocked));
+  } catch (e) { console.warn('Save failed:', e); }
 }
 
-// load on script import
+function loadUnlocks() {
+  try {
+    const data = JSON.parse(localStorage.getItem('chemicraft_unlocks') || '[]');
+    items.forEach(it => it.unlocked = data.includes(it.sym));
+  } catch (e) { console.warn('Load failed:', e); }
+}
+
+// Load saved unlocks on start
 loadUnlocks();
