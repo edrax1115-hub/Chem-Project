@@ -78,7 +78,7 @@ const baseCompounds = [
   ["Explosion", "Explosion", "💥"],
 ];
 for (const [sym, name, emoji] of baseCompounds) {
-  items.push({ sym, name, emoji, category: "Compounds", unlocked: false });
+  items.push({ sym, name, emoji, category: "Compounds", unlocked: true });
 }
 
 // ---------- RECIPES ----------
