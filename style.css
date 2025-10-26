@@ -1,19 +1,51 @@
-/* make element grid scroll nicely on mobile */
-#elementGrid {
-  max-height: calc(45vh - 64px);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+:root{
+  --bg:#041421; --panel:#072533; --muted:#9fb6cd; --accent:#39d1ff; --danger:#ef4444;
+  --card:#0b2b36;
 }
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:var(--bg);color:#e6f8ff}
+#topbar{height:56px;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:linear-gradient(90deg,#012029,#021b28);z-index:120}
+.left,.right{display:flex;gap:8px;align-items:center}
+.btn{background:var(--panel);border:0;padding:8px 10px;border-radius:10px;color:var(--muted);font-weight:700;cursor:pointer}
+.btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+.btn.warn{background:var(--danger);color:white}
+main#board{position:fixed;inset:56px 0 0 0;background:
+  radial-gradient(ellipse at center, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0) 40%),
+  linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.04));overflow:hidden}
 
-/* node label show/hide */
-.node { touch-action: none; user-select: none; -webkit-user-select: none; }
-.node .node-label { display:block; opacity:0; transition:opacity .18s; font-size:11px; color: #ddd; margin-top:4px; }
-.node.show-name .node-label { opacity:1; }
+/* toolbar */
+#toolbar{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(180deg,#052a36,#01303a);border-top-left-radius:12px;border-top-right-radius:12px;padding:10px;box-shadow:0 -8px 30px rgba(0,0,0,.6);transform:translateY(100%);transition:transform .28s ease;z-index:110;pointer-events:none}
+#toolbar.open{transform:translateY(0);pointer-events:auto}
+#toolbarTop{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+#search{flex:1;padding:8px;border-radius:8px;border:0;background:#021f26;color:var(--muted)}
+#category{padding:8px;border-radius:8px;border:0;background:#021f26;color:var(--muted)}
+#elementGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px;max-height:36vh;overflow:auto;padding:6px;-webkit-overflow-scrolling:touch}
 
-/* make toolbar non-blocking when closed (already present in earlier CSS),
-   ensure it becomes interactive only when open */
-#toolbar { pointer-events: none; }
-#toolbar.open { pointer-events: auto; }
+/* element tile */
+.elem{background:linear-gradient(180deg,#063b4c,#024a5d);border-radius:10px;padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:#eaffff;user-select:none;min-height:64px}
+.elem.locked{opacity:.24;filter:grayscale(.2);cursor:not-allowed}
 
-/* better spark appearance */
-.spark { position: absolute; width:10px; height:10px; border-radius:50%; background: radial-gradient(circle, #fff 0%, #ffd54d 30%, rgba(255,150,0,0) 70%); pointer-events:none; z-index:9999; }
+/* node (spawned item) */
+.node{position:absolute;width:76px;height:76px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:28px;background:linear-gradient(180deg,#1f90ff,#1766c7);color:#fff;font-weight:700;box-shadow:0 12px 30px rgba(0,0,0,.6);touch-action:none;user-select:none;cursor:grab;z-index:100}
+.node.compound{background:linear-gradient(180deg,#16a085,#0aa0a0)}
+.node .node-emoji{font-size:28px}
+.node .node-label{font-size:11px;color:var(--muted);margin-top:6px;opacity:0;transition:opacity .18s}
+.node.show-name .node-label{opacity:1}
+
+/* achievements & settings panels */
+#achievements,#settings{position:fixed;right:12px;top:72px;width:220px;background:rgba(2,30,36,.95);padding:10px;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.6);z-index:120;color:#dff7ff;display:none}
+#achievements h3,#settings h3{margin:0 0 8px 0}
+.chip{background:#05333f;padding:6px 8px;border-radius:8px;color:#cefbff;margin:4px 4px 0 0;display:inline-block}
+
+/* notification */
+#notif{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:rgba(0,0,0,.6);padding:8px 12px;border-radius:10px;display:none;z-index:999;color:#fff}
+
+/* spark */
+.spark{position:absolute;border-radius:50%;width:12px;height:12px;background:radial-gradient(circle,#fff 0%,#ffd54d 30%,rgba(255,150,0,0) 70%);pointer-events:none;transform:translate(-50%,-50%);z-index:999}
+
+/* responsive */
+@media(max-width:520px){
+  #elementGrid{grid-template-columns:repeat(auto-fill,minmax(56px,1fr))}
+  .node{width:64px;height:64px;font-size:24px}
+  #achievements,#settings{display:none}
+  }
