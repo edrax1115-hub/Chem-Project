@@ -1,69 +1,79 @@
-// data.js — Chemicraft database
+/* data.js — Chemicraft Database (Elements + Recipes) */
 
+// ===== Elements =====
 const items = [
-  // --- Elements ---
-  { sym:"H", emoji:"🟦", name:"Hydrogen", category:"Elements", unlocked:false },
-  { sym:"O", emoji:"🌬️", name:"Oxygen", category:"Elements", unlocked:false },
-  { sym:"C", emoji:"🪨", name:"Carbon", category:"Elements", unlocked:false },
-  { sym:"N", emoji:"🌫️", name:"Nitrogen", category:"Elements", unlocked:false },
-  { sym:"Na", emoji:"⚡", name:"Sodium", category:"Elements", unlocked:false },
-  { sym:"Cl", emoji:"☣️", name:"Chlorine", category:"Elements", unlocked:false },
-  { sym:"Fe", emoji:"🧲", name:"Iron", category:"Elements", unlocked:false },
-  { sym:"S", emoji:"🟨", name:"Sulfur", category:"Elements", unlocked:false },
-  { sym:"Ca", emoji:"🤍", name:"Calcium", category:"Elements", unlocked:false },
-  { sym:"K", emoji:"💜", name:"Potassium", category:"Elements", unlocked:false },
+  // --- Starter Elements (Unlocked) ---
+  { sym: "H", name: "Hydrogen", emoji: "💧", category: "Elements", unlocked: true },
+  { sym: "O", name: "Oxygen", emoji: "🌬️", category: "Elements", unlocked: true },
+  { sym: "C", name: "Carbon", emoji: "🪵", category: "Elements", unlocked: true },
+  { sym: "N", name: "Nitrogen", emoji: "🌫️", category: "Elements", unlocked: true },
+  { sym: "Na", name: "Sodium", emoji: "🧂", category: "Elements", unlocked: true },
+  { sym: "Cl", name: "Chlorine", emoji: "☣️", category: "Elements", unlocked: true },
 
-  // --- Environmental ---
-  { sym:"Air", emoji:"💨", name:"Air", category:"Environmental", unlocked:true },
-  { sym:"Fire", emoji:"🔥", name:"Fire", category:"Environmental", unlocked:true },
-  { sym:"Earth", emoji:"🌍", name:"Earth", category:"Environmental", unlocked:true },
-  { sym:"Water", emoji:"💧", name:"Water", category:"Environmental", unlocked:true },
+  // --- Discoverable Elements ---
+  { sym: "Fe", name: "Iron", emoji: "⚙️", category: "Elements", unlocked: false },
+  { sym: "S", name: "Sulfur", emoji: "🌋", category: "Elements", unlocked: false },
+  { sym: "Ca", name: "Calcium", emoji: "🦴", category: "Elements", unlocked: false },
+  { sym: "K", name: "Potassium", emoji: "🍌", category: "Elements", unlocked: false },
+  { sym: "P", name: "Phosphorus", emoji: "✨", category: "Elements", unlocked: false },
+  { sym: "Si", name: "Silicon", emoji: "💠", category: "Elements", unlocked: false },
+  { sym: "Mg", name: "Magnesium", emoji: "⚡", category: "Elements", unlocked: false },
 
-  // --- Compounds ---
-  { sym:"H2O", emoji:"💧", name:"Water", category:"Compounds", unlocked:false },
-  { sym:"CO2", emoji:"🌫️", name:"Carbon Dioxide", category:"Compounds", unlocked:false },
-  { sym:"NaCl", emoji:"🧂", name:"Salt", category:"Compounds", unlocked:false },
-  { sym:"NH3", emoji:"💨", name:"Ammonia", category:"Compounds", unlocked:false },
-  { sym:"CH4", emoji:"🔥", name:"Methane", category:"Compounds", unlocked:false },
-  { sym:"Fe2O3", emoji:"🟤", name:"Rust", category:"Compounds", unlocked:false },
-  { sym:"H2SO4", emoji:"🧪", name:"Sulfuric Acid", category:"Compounds", unlocked:false },
-  { sym:"CaCO3", emoji:"🏔️", name:"Limestone", category:"Compounds", unlocked:false },
-  { sym:"NaOH", emoji:"🧴", name:"Sodium Hydroxide", category:"Compounds", unlocked:false },
-  { sym:"KCl", emoji:"🧂", name:"Potassium Chloride", category:"Compounds", unlocked:false },
+  // --- Starter Category 2: Common Compounds (Locked) ---
+  { sym: "H2O", name: "Water", emoji: "💦", category: "Compounds", unlocked: false },
+  { sym: "CO2", name: "Carbon Dioxide", emoji: "💨", category: "Compounds", unlocked: false },
+  { sym: "NaCl", name: "Salt", emoji: "🧂", category: "Compounds", unlocked: false },
+  { sym: "NH3", name: "Ammonia", emoji: "💨", category: "Compounds", unlocked: false },
+  { sym: "CH4", name: "Methane", emoji: "🔥", category: "Compounds", unlocked: false },
+  { sym: "H2SO4", name: "Sulfuric Acid", emoji: "🧪", category: "Compounds", unlocked: false },
+  { sym: "Fe2O3", name: "Iron Oxide", emoji: "🧱", category: "Compounds", unlocked: false },
+  { sym: "CaCO3", name: "Calcium Carbonate", emoji: "🪨", category: "Compounds", unlocked: false },
+  { sym: "SiO2", name: "Silicon Dioxide", emoji: "🔮", category: "Compounds", unlocked: false },
 ];
 
+// ===== Recipes =====
 const recipes = [
-  // Basic chemistry
-  { inputs:["H","O"], output:"H2O" },
-  { inputs:["C","O"], output:"CO2" },
-  { inputs:["Na","Cl"], output:"NaCl" },
-  { inputs:["Fe","O"], output:"Fe2O3" },
-  { inputs:["N","H"], output:"NH3" },
-  { inputs:["C","H"], output:"CH4" },
-  { inputs:["S","O"], output:"H2SO4" },
-  { inputs:["Ca","C"], output:"CaCO3" },
-  { inputs:["Na","H2O"], output:"NaOH" },
-  { inputs:["K","Cl"], output:"KCl" },
+  // --- Basic Reactions ---
+  { inputs: ["H", "O"], output: "H2O" },
+  { inputs: ["C", "O"], output: "CO2" },
+  { inputs: ["Na", "Cl"], output: "NaCl" },
+  { inputs: ["N", "H"], output: "NH3" },
+  { inputs: ["C", "H"], output: "CH4" },
+  { inputs: ["H2O", "C"], output: "CH4" },
+  { inputs: ["Fe", "O"], output: "Fe2O3" },
+  { inputs: ["Ca", "C"], output: "CaCO3" },
+  { inputs: ["Si", "O"], output: "SiO2" },
+  { inputs: ["S", "O"], output: "H2SO4" },
 
-  // Environmental fun
-  { inputs:["Fire","Water"], output:"Steam" },
-  { inputs:["Water","Earth"], output:"Mud" },
-  { inputs:["Air","Fire"], output:"Smoke" },
+  // --- Creative / Fun Combos ---
+  { inputs: ["H2O", "Na"], output: "NaOH" },
+  { inputs: ["NaCl", "H2O"], output: "SaltWater" },
+  { inputs: ["CH4", "O"], output: "CO2" },
+  { inputs: ["NH3", "H2O"], output: "NH4OH" },
+  { inputs: ["CO2", "H2O"], output: "H2CO3" },
+  { inputs: ["SiO2", "Na"], output: "Glass" },
+  { inputs: ["Fe", "C"], output: "Steel" },
+  { inputs: ["C", "O", "H"], output: "OrganicCompound" },
+  { inputs: ["CaCO3", "Heat"], output: "CO2" },
+  { inputs: ["NaOH", "HCl"], output: "H2O" },
 ];
 
-const STORAGE_KEY = "chemicraft_unlocks_v2";
+// ===== Save/Load =====
+function saveUnlocks() {
+  const unlocked = items.filter(i => i.unlocked).map(i => i.sym);
+  localStorage.setItem("chemicraft_unlocks", JSON.stringify(unlocked));
+}
+
 function loadUnlocks() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    const unlocked = JSON.parse(raw);
-    items.forEach(i => { if (unlocked.includes(i.sym)) i.unlocked = true; });
-  } catch (e) { console.warn("loadUnlocks failed", e); }
+    const unlocked = JSON.parse(localStorage.getItem("chemicraft_unlocks")) || [];
+    items.forEach(i => {
+      i.unlocked = unlocked.includes(i.sym);
+    });
+  } catch (e) {
+    console.warn("Failed to load unlocks", e);
+  }
 }
-function saveUnlocks() {
-  try {
-    const unlocked = items.filter(i => i.unlocked).map(i => i.sym);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(unlocked));
-  } catch (e) { console.warn("saveUnlocks failed", e); }
-}
+
+// Load unlocks on start
 loadUnlocks();
