@@ -77,3 +77,7 @@ function loadUnlocks() {
 
 // Load unlocks on start
 loadUnlocks();
+
+// Make items and recipes global for other scripts (CRUCIAL for toolbar and logic.js)
+window.items = items;
+window.recipes = recipes;
