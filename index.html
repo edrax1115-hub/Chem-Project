@@ -1,63 +1,60 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Chemicraft — Mobile Lab</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chemicraft — The Interactive Element Lab</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header id="topbar">
-    <div class="left">
-      <button id="openToolbar" class="btn">⚗️ Lab</button>
-      <button id="openAchievements" class="btn">🏆 Discoveries</button>
-    </div>
-    <div class="right">
-      <button id="openSettings" class="btn">⚙️ Settings</button>
-      <button id="clearBoard" class="btn warn">🧹 Clear</button>
-    </div>
-  </header>
+  <div id="topbar">
+    <button id="openToolbar" class="btn">⚗️ Elements</button>
+    <button id="openSettings" class="btn">⚙️ Settings</button>
+    <button id="clearBoard" class="btn">🧹 Clear</button>
+  </div>
 
-  <main id="board" aria-label="Lab workspace"></main>
+  <!-- MAIN PLAY AREA -->
+  <div id="board"></div>
 
-  <!-- Toolbar (bottom) -->
-  <section id="toolbar" aria-hidden="true">
-    <div id="toolbarTop">
-      <input id="search" placeholder="Search elements or names…" />
+  <!-- TOOLBAR -->
+  <div id="toolbar" class="panel">
+    <div class="panel-header">
+      <input id="search" type="text" placeholder="Search element...">
       <select id="category">
-        <option>All</option>
-        <option>Elements</option>
-        <option>Compounds</option>
-        <option>Environmental</option>
+        <option value="All">All</option>
+        <option value="Elements">Elements</option>
+        <option value="Compounds">Compounds</option>
       </select>
     </div>
-    <div id="elementGrid" role="list"></div>
-  </section>
+    <div id="elementGrid"></div>
+  </div>
 
-  <!-- Achievements / Settings panels -->
-  <aside id="achievements" aria-hidden="true">
-    <h3>🏆 Discoveries</h3>
+  <!-- SETTINGS -->
+  <div id="settingsPanel" class="panel">
+    <h2>Settings & Tips</h2>
+    <label><input type="checkbox" id="soundToggle"> Enable Sound</label><br>
+    <label><input type="checkbox" id="tipsToggle"> Show Tips</label>
+    <div class="tips-section">
+      <h3>💡 Tips</h3>
+      <ul>
+        <li>Drag and drop two items together to see if they react!</li>
+        <li>Combine base elements like Hydrogen + Oxygen → Water.</li>
+        <li>Unlock new compounds to expand your knowledge and inventory!</li>
+        <li>Use "Clear" to reset your lab board.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ACHIEVEMENTS -->
+  <div id="achievements" class="panel">
+    <h2>Achievements</h2>
     <div id="discoveredList"></div>
-  </aside>
+  </div>
 
-  <aside id="settings" aria-hidden="true">
-    <h3>⚙ Settings</h3>
-    <div class="setting">
-      <button id="toggleAmbience" class="btn">🔊 Ambient: Off</button>
-    </div>
-    <div class="setting">
-      <label><input id="toggleNames" type="checkbox"> Always show names</label>
-    </div>
-    <div class="setting">
-      <button id="resetUnlocks" class="btn ghost">Reset Discoveries</button>
-    </div>
-  </aside>
+  <!-- NOTIFICATION -->
+  <div id="notif"></div>
 
-  <div id="notif" role="status" aria-live="polite"></div>
-
-  <!-- Data first, then logic, then settings -->
   <script src="data.js"></script>
   <script src="logic.js"></script>
-  <script src="settings.js"></script>
 </body>
 </html>
