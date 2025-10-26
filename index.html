@@ -1,43 +1,61 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chemicraft</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Chemicraft — Mobile Lab</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="topbar">
-    <button id="openToolbar">⚗️ Elements</button>
-    <button id="openAchievements">🏆 Achievements</button>
-    <button id="openSettings">⚙️ Settings</button>
-  </div>
+  <header id="topbar">
+    <div class="left">
+      <button id="openToolbar" class="btn">⚗️ Lab</button>
+      <button id="openAchievements" class="btn">🏆 Discoveries</button>
+    </div>
+    <div class="right">
+      <button id="openSettings" class="btn">⚙️ Settings</button>
+      <button id="clearBoard" class="btn warn">🧹 Clear</button>
+    </div>
+  </header>
 
-  <div id="board"></div>
+  <main id="board" aria-label="Lab workspace"></main>
 
-  <div id="toolbar">
-    <input type="text" id="search" placeholder="Search elements...">
-    <select id="category">
-      <option>All</option>
-      <option>Elements</option>
-      <option>Compounds</option>
-    </select>
-    <div id="elementGrid"></div>
-  </div>
+  <!-- Toolbar (bottom) -->
+  <section id="toolbar" aria-hidden="true">
+    <div id="toolbarTop">
+      <input id="search" placeholder="Search elements or names…" />
+      <select id="category">
+        <option>All</option>
+        <option>Elements</option>
+        <option>Compounds</option>
+        <option>Environmental</option>
+      </select>
+    </div>
+    <div id="elementGrid" role="list"></div>
+  </section>
 
-  <div id="achievements">
-    <h2>Achievements</h2>
+  <!-- Achievements / Settings panels -->
+  <aside id="achievements" aria-hidden="true">
+    <h3>🏆 Discoveries</h3>
     <div id="discoveredList"></div>
-  </div>
+  </aside>
 
-  <div id="settings">
-    <h2>Settings</h2>
-    <button id="toggleAmbience">🔇 Ambient: Off</button>
-    <label><input type="checkbox" id="toggleNames"> Always show names</label>
-  </div>
+  <aside id="settings" aria-hidden="true">
+    <h3>⚙ Settings</h3>
+    <div class="setting">
+      <button id="toggleAmbience" class="btn">🔊 Ambient: Off</button>
+    </div>
+    <div class="setting">
+      <label><input id="toggleNames" type="checkbox"> Always show names</label>
+    </div>
+    <div class="setting">
+      <button id="resetUnlocks" class="btn ghost">Reset Discoveries</button>
+    </div>
+  </aside>
 
-  <div id="notif"></div>
+  <div id="notif" role="status" aria-live="polite"></div>
 
+  <!-- Data first, then logic, then settings -->
   <script src="data.js"></script>
   <script src="logic.js"></script>
   <script src="settings.js"></script>
