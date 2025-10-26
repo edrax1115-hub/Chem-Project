@@ -1,10 +1,4 @@
-/* logic.js — Chemicraft (AI-integrated combine)
-   Replaces previous logic.js — uses chemicraft.getReaction(a,b) when available
-   - Handles async AI results
-   - Unlocks + spawns products
-   - Supports multiple outputs split by '+'
-*/
-
+/* logic.js — Unified Chemicraft control (UI, settings, drag, sound, combine) */
 (() => {
   // ======= DOM refs =======
   const board = document.getElementById("board");
@@ -13,16 +7,13 @@
   const elementGrid = document.getElementById("elementGrid");
   const search = document.getElementById("search");
   const category = document.getElementById("category");
-
   const openToolbarBtn = document.getElementById("openToolbar");
   const clearBoardBtn = document.getElementById("clearBoard");
   const openAchievementsBtn = document.getElementById("openAchievements");
   const openSettingsBtn = document.getElementById("openSettings");
-
   const achievementsPanel = document.getElementById("achievements");
   const discoveredList = document.getElementById("discoveredList");
   const settingsPanel = document.getElementById("settingsPanel");
-
   const toggleSound = document.getElementById("toggleSound");
   const toggleLabels = document.getElementById("toggleLabels");
 
@@ -30,19 +21,11 @@
   let spawned = [];
   let nodeId = 0;
   let audioCtx = null;
-  let ambientSource = null;
+  let ambientOsc1 = null, ambientOsc2 = null, ambientGain = null, ambientPlaying = false;
   let isDragging = false;
   let showLabels = (localStorage.getItem("chemicraft_showLabels") !== "false");
 
-  // small helpers
-  function notify(msg, ms = 1000) {
-    if (!notif) return;
-    notif.textContent = msg;
-    notif.style.display = "block";
-    clearTimeout(notify._t);
-    notify._t = setTimeout(() => (notif.style.display = "none"), ms);
-  }
-
+  // ======= Audio =======
   function ensureAudio() {
     if (audioCtx) return;
     try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ audioCtx = null; }
@@ -65,14 +48,50 @@
     const g = audioCtx.createGain(); g.gain.value = 0.06;
     src.connect(g); g.connect(audioCtx.destination); src.start();
   }
+  function startAmbient() {
+    ensureAudio();
+    if (ambientPlaying || !audioCtx) return;
+    ambientOsc1 = audioCtx.createOscillator();
+    ambientOsc2 = audioCtx.createOscillator();
+    ambientGain = audioCtx.createGain();
+    ambientOsc1.frequency.value = 170;
+    ambientOsc2.frequency.value = 172;
+    ambientOsc1.type = 'sine';
+    ambientOsc2.type = 'triangle';
+    ambientGain.gain.value = 0.12;
+    ambientOsc1.connect(ambientGain);
+    ambientOsc2.connect(ambientGain);
+    ambientGain.connect(audioCtx.destination);
+    ambientOsc1.start();
+    ambientOsc2.start();
+    ambientPlaying = true;
+  }
+  function stopAmbient() {
+    if (ambientOsc1) ambientOsc1.stop(); 
+    if (ambientOsc2) ambientOsc2.stop();
+    if (ambientGain) ambientGain.gain.value = 0;
+    ambientOsc1 = ambientOsc2 = ambientGain = null;
+    ambientPlaying = false;
+  }
+  function checkAmbientToggle(val) {
+    if (val) startAmbient(); else stopAmbient();
+  }
 
-  // ======= Render toolbar =======
+  // ======= Notification =======
+  function notify(msg, ms = 1000) {
+    if (!notif) return;
+    notif.textContent = msg;
+    notif.style.display = "block";
+    clearTimeout(notify._t);
+    notify._t = setTimeout(() => (notif.style.display = "none"), ms);
+  }
+
+  // ======= Toolbar Render =======
   function renderToolbar() {
     if (!elementGrid) return;
     elementGrid.innerHTML = "";
     const q = (search && search.value || "").toLowerCase();
     const cat = (category && category.value) || "All";
-
     const sorted = (window.items || []).slice().sort((a,b) => (a.unlocked === b.unlocked ? 0 : a.unlocked ? -1 : 1));
     sorted.forEach(it => {
       if (cat !== "All" && it.category !== cat) return;
@@ -116,12 +135,9 @@
       <div class="node-label" style="display:${showLabels ? 'block' : 'none'}">${item.name || item.sym}</div>
     `;
     const br = board.getBoundingClientRect();
-    // spawn at center area (slight jitter)
     const jitter = Math.floor(Math.random()*40)-20;
     node.style.left = (br.width/2 - 36 + jitter) + "px";
     node.style.top  = (br.height/2 - 36 + jitter) + "px";
-
-    // attach drag handlers and append
     enableDrag(node);
     board.appendChild(node);
     spawned.push(node);
@@ -129,16 +145,13 @@
     return node;
   }
 
-  // ======= Dragging (robust) =======
-  // We'll use global pointermove/pointerup state to be reliable on mobile.
-  let dragState = null; // { node, pid, ox, oy, startX, startY, moved }
-
+  // ======= Dragging =======
+  let dragState = null;
   function enableDrag(node) {
     node.addEventListener('pointerdown', ev => {
       ev.preventDefault();
       try { node.setPointerCapture(ev.pointerId); } catch(e) {}
       const rect = node.getBoundingClientRect();
-      const br = board.getBoundingClientRect();
       dragState = {
         node,
         pid: ev.pointerId,
@@ -151,7 +164,6 @@
       node.style.zIndex = 9999;
     });
   }
-
   window.addEventListener('pointermove', ev => {
     if (!dragState || ev.pointerId !== dragState.pid) return;
     const node = dragState.node;
@@ -166,7 +178,6 @@
     if (!dragState.moved && Math.sqrt(dx*dx+dy*dy) > 6) dragState.moved = true;
     isDragging = true;
   }, { passive:false });
-
   window.addEventListener('pointerup', ev => {
     if (!dragState || ev.pointerId !== dragState.pid) return;
     const node = dragState.node;
@@ -184,7 +195,6 @@
   });
 
   // ======= AI-assisted combine (ASYNC) =======
-  // This function asks chemicraft.getReaction(a,b) if present; else falls back to local recipes array.
   async function checkCombineAsync(node) {
     if (!node) return;
     const r1 = node.getBoundingClientRect();
@@ -193,60 +203,35 @@
       const r2 = other.getBoundingClientRect();
       const overlap = !(r1.right < r2.left || r1.left > r2.right || r1.bottom < r2.top || r1.top > r2.bottom);
       if (!overlap) continue;
-
       const a = node.dataset.sym;
       const b = other.dataset.sym;
-
-      // visual/UX: small loading state
       notify('Analysing reaction...', 900);
-      // Make sure audio context exists on user gesture
       ensureAudio();
-      // remove nodes visually
       node.remove(); other.remove();
       spawned = spawned.filter(n => n !== node && n !== other);
-
-      // Obtain reaction result using hybrid AI if available
       let aiResult = null;
       try {
         if (window.chemicraft && typeof window.chemicraft.getReaction === 'function') {
-          // call AI (could be offline simple generator or online)
           aiResult = await window.chemicraft.getReaction(a, b);
         } else {
-          // fallback: try local recipes array (non-AI)
           const local = findLocalRecipe(a, b) || findLocalRecipe(b, a);
           if (local) aiResult = { inputs: [a,b], output: local, name: local };
           else aiResult = { inputs:[a,b], output: `${a}${b}`, name: `${a}${b}` };
         }
       } catch (err) {
-        console.warn('AI combine failed, falling back', err);
-        // fallback if AI fails
         const local = findLocalRecipe(a, b) || findLocalRecipe(b, a);
         aiResult = local ? { inputs:[a,b], output: local, name: local } : { inputs:[a,b], output: `${a}${b}`, name: `${a}${b}` };
       }
-
-      // Normalize outputs: AI may return "A+B" or "A + B" or a single string
       const outputs = parseOutputs(aiResult.output || aiResult.name || aiResult);
-
-      // For each output, ensure it's in items[] and unlocked (or create it)
       for (const outSym of outputs) {
         let prod = (window.items || []).find(it => it.sym === outSym);
         if (!prod) {
-          // create new compound entry
           prod = { sym: outSym, emoji: '✨', name: aiResult.name || outSym, category:'Compounds', unlocked:true };
           window.items.push(prod);
-        } else {
-          // unlock if locked
-          if (!prod.unlocked) {
-            prod.unlocked = true;
-          }
-        }
-        // persist unlocks if function exists
+        } else { if (!prod.unlocked) prod.unlocked = true; }
         if (typeof saveUnlocks === 'function') saveUnlocks();
-        // spawn product node(s)
         spawnNode(prod);
       }
-
-      // feedback
       playFizz();
       notify('Reaction complete!', 900);
       renderToolbar();
@@ -254,31 +239,21 @@
       return;
     }
   }
-
-  // Parse result string into array of product symbols
   function parseOutputs(outputStr) {
     if (!outputStr) return [];
-    // split by '+' and comma, trim
     const parts = String(outputStr).split(/[\+,\/;]/).map(s=>s.trim()).filter(Boolean);
-    // if part contains spaces and looks like a name (like "Sodium Hydroxide"), try to find symbol in items by name
     const resolved = parts.map(p => {
-      // try exact symbol match first
       const bySym = (window.items || []).find(it => it.sym.toLowerCase() === p.toLowerCase());
       if (bySym) return bySym.sym;
-      // try find by name
       const byName = (window.items || []).find(it => (it.name||'').toLowerCase() === p.toLowerCase());
       if (byName) return byName.sym;
-      // last fallback: remove non-alphanum and use that as symbol
       return p.replace(/[^A-Za-z0-9]/g,'') || p;
     });
     return resolved;
   }
-
-  // local recipes fallback (simple lookup in window.recipes if present)
   function findLocalRecipe(a,b) {
     if (!window.recipes) return null;
     for (const r of window.recipes) {
-      // support r.inputs being array of length >=2; check set inclusion
       const ins = r.inputs.map(x=>String(x));
       if (ins.includes(a) && ins.includes(b)) return r.output;
     }
@@ -294,45 +269,35 @@
   openSettingsBtn?.addEventListener('click', () => {
     settingsPanel.style.display = settingsPanel.style.display === 'block' ? 'none' : 'block';
   });
-
   clearBoardBtn?.addEventListener('click', () => {
     spawned.forEach(n => n.remove());
     spawned = [];
     notify('Board cleared', 700);
   });
-
-  // sound/labels toggles
-  toggleSound?.addEventListener('change', (e) => {
-    if (e.target.checked) ensureAudio();
-    else { if (audioCtx) { /* don't forcibly close; user can toggle ambient separately */ } }
-  });
-
+  toggleSound?.addEventListener('change', (e) => checkAmbientToggle(e.target.checked));
   toggleLabels?.addEventListener('change', (e) => {
     showLabels = !!e.target.checked;
     localStorage.setItem('chemicraft_showLabels', showLabels ? 'true':'false');
     document.querySelectorAll('.node .node-label').forEach(lbl => { lbl.style.display = showLabels ? 'block' : 'none'; });
   });
-
   document.addEventListener('click', (e) => {
     if (isDragging) return;
     if (toolbar && !toolbar.contains(e.target) && e.target !== openToolbarBtn) toolbar.classList.remove('open');
     if (settingsPanel && !settingsPanel.contains(e.target) && e.target !== openSettingsBtn) settingsPanel.style.display = 'none';
     if (achievementsPanel && !achievementsPanel.contains(e.target) && e.target !== openAchievementsBtn) achievementsPanel.style.display = 'none';
   });
-
   (search)?.addEventListener('input', renderToolbar);
   (category)?.addEventListener('change', renderToolbar);
 
   // ======= init =======
-  // ensure label toggle matches saved state
   if (toggleLabels) { toggleLabels.checked = showLabels; }
+  if (toggleSound) { toggleSound.checked = false; }
   renderToolbar();
   renderAchievements();
 
-  // expose helper
+  // Expose helpers
   window.chemicraft = window.chemicraft || {};
   window.chemicraft.spawnNode = spawnNode;
   window.chemicraft.renderToolbar = renderToolbar;
   window.chemicraft.renderAchievements = renderAchievements;
-
-})(); // end logic.js
+})();
