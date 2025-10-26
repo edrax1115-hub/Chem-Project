@@ -59,6 +59,8 @@ const recipes = [
 ];
 
 // ===== Save/Load =====
+const STARTER_SYMS = ["H", "O", "C", "N", "Na", "Cl"];
+
 function saveUnlocks() {
   const unlocked = items.filter(i => i.unlocked).map(i => i.sym);
   localStorage.setItem("chemicraft_unlocks", JSON.stringify(unlocked));
@@ -66,12 +68,20 @@ function saveUnlocks() {
 
 function loadUnlocks() {
   try {
-    const unlocked = JSON.parse(localStorage.getItem("chemicraft_unlocks")) || [];
+    let unlocked = JSON.parse(localStorage.getItem("chemicraft_unlocks")) || [];
+    // Always ensure starter elements are unlocked
+    for (const sym of STARTER_SYMS) {
+      if (!unlocked.includes(sym)) unlocked.push(sym);
+    }
     items.forEach(i => {
       i.unlocked = unlocked.includes(i.sym);
     });
   } catch (e) {
     console.warn("Failed to load unlocks", e);
+    // Fallback: at least starter elements unlocked
+    items.forEach(i => {
+      i.unlocked = STARTER_SYMS.includes(i.sym);
+    });
   }
 }
 
