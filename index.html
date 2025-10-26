@@ -1,59 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chemicraft — The Interactive Element Lab</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chemicraft — Sandbox Chemistry Lab</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="topbar">
-    <button id="openToolbar" class="btn">⚗️ Elements</button>
-    <button id="openSettings" class="btn">⚙️ Settings</button>
-    <button id="clearBoard" class="btn">🧹 Clear</button>
+  <!-- ===== Top Buttons ===== -->
+  <div id="topButtons">
+    <button id="openToolbar">⚗️ Elements</button>
+    <div style="display:flex;gap:8px;">
+      <button id="openSettings">⚙️ Settings</button>
+      <button id="openAchievements">🏆 Achievements</button>
+      <button id="clearBoard">🧹 Clear</button>
+    </div>
   </div>
 
-  <!-- MAIN PLAY AREA -->
+  <!-- ===== Game Board ===== -->
   <div id="board"></div>
 
-  <!-- TOOLBAR -->
-  <div id="toolbar" class="panel">
-    <div class="panel-header">
-      <input id="search" type="text" placeholder="Search element...">
-      <select id="category">
-        <option value="All">All</option>
-        <option value="Elements">Elements</option>
-        <option value="Compounds">Compounds</option>
+  <!-- ===== Notification ===== -->
+  <div id="notif"></div>
+
+  <!-- ===== Toolbar ===== -->
+  <div id="toolbar">
+    <div style="padding:10px;display:flex;gap:10px;align-items:center;">
+      <input id="search" type="text" placeholder="Search element..." style="flex:1;padding:8px;border-radius:8px;border:none;outline:none;background:#1b1f2d;color:#fff;">
+      <select id="category" style="padding:8px;border-radius:8px;background:#1b1f2d;color:#fff;">
+        <option>All</option>
+        <option>Elements</option>
+        <option>Compounds</option>
       </select>
     </div>
     <div id="elementGrid"></div>
   </div>
 
-  <!-- SETTINGS -->
-  <div id="settingsPanel" class="panel">
-    <h2>Settings & Tips</h2>
-    <label><input type="checkbox" id="soundToggle"> Enable Sound</label><br>
-    <label><input type="checkbox" id="tipsToggle"> Show Tips</label>
-    <div class="tips-section">
-      <h3>💡 Tips</h3>
-      <ul>
-        <li>Drag and drop two items together to see if they react!</li>
-        <li>Combine base elements like Hydrogen + Oxygen → Water.</li>
-        <li>Unlock new compounds to expand your knowledge and inventory!</li>
-        <li>Use "Clear" to reset your lab board.</li>
-      </ul>
-    </div>
-  </div>
-
-  <!-- ACHIEVEMENTS -->
+  <!-- ===== Achievements Panel ===== -->
   <div id="achievements" class="panel">
-    <h2>Achievements</h2>
+    <h3>🏆 Discovered Compounds</h3>
     <div id="discoveredList"></div>
   </div>
 
-  <!-- NOTIFICATION -->
-  <div id="notif"></div>
+  <!-- ===== Settings Panel ===== -->
+  <div id="settingsPanel" class="panel">
+    <h3>⚙️ Settings</h3>
+    <label><input type="checkbox" id="toggleLabels" checked> Show names under emojis</label><br>
+    <label><input type="checkbox" id="toggleSound" checked> Ambient sound</label>
+    <hr>
+    <h4>💡 Tips</h4>
+    <ul style="font-size:13px;color:var(--muted);padding-left:20px;">
+      <li>Combine elements by dragging one onto another.</li>
+      <li>Locked items unlock when you discover new compounds.</li>
+      <li>You can hide labels or sound here anytime.</li>
+      <li>Try combining real chemical pairs (e.g., H + O → H₂O).</li>
+    </ul>
+  </div>
 
+  <!-- ===== Scripts ===== -->
   <script src="data.js"></script>
   <script src="logic.js"></script>
 </body>
