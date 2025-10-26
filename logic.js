@@ -1,265 +1,357 @@
-/* logic.js — core game logic
-   - spawn, drag, combine
-   - achievements list rendering
-   - exposes window.chemicraft helpers
+/* logic.js — Chemicraft Refined Core
+   Phase 2 Rebuild: stable drag, visible names, settings panel, & tips
 */
 
 (() => {
-  // DOM refs
+  // ===== DOM Refs =====
   const refs = {
-    board: document.getElementById('board'),
-    toolbar: document.getElementById('toolbar'),
-    elementGrid: document.getElementById('elementGrid'),
-    search: document.getElementById('search'),
-    category: document.getElementById('category'),
-    openToolbar: document.getElementById('openToolbar'),
-    openAchievements: document.getElementById('openAchievements'),
-    achievementsPanel: document.getElementById('achievements'),
-    discoveredList: document.getElementById('discoveredList'),
-    notif: document.getElementById('notif'),
-    openSettings: document.getElementById('openSettings'),
-    settingsPanel: document.getElementById('settings'),
-    clearBoard: document.getElementById('clearBoard')
+    board: document.getElementById("board"),
+    toolbar: document.getElementById("toolbar"),
+    elementGrid: document.getElementById("elementGrid"),
+    search: document.getElementById("search"),
+    category: document.getElementById("category"),
+    notif: document.getElementById("notif"),
+    openToolbarBtn: document.getElementById("openToolbar"),
+    clearBoardBtn: document.getElementById("clearBoard"),
+    settingsBtn: document.getElementById("openSettings"),
+    settingsPanel: document.getElementById("settingsPanel"),
+    soundToggle: document.getElementById("soundToggle"),
+    tipsToggle: document.getElementById("tipsToggle"),
+    achievementsPanel: document.getElementById("achievements"),
+    discoveredList: document.getElementById("discoveredList"),
   };
 
-  if (!refs.board || !window.items) { console.error("Missing required DOM or data"); return; }
-
-  let spawned = [];
-  let idCounter = 0;
-  let audioCtx = null;
-  // global drag state
-  let dragState = null; // { node, pointerId, ox, oy, startX, startY, moved }
-
-  // helper notify
-  function notify(msg, ms=1100){
-    if(!refs.notif) return;
-    refs.notif.textContent = msg;
-    refs.notif.style.display = 'block';
-    refs.notif.style.opacity = '1';
-    clearTimeout(notify._t);
-    notify._t = setTimeout(()=>{ refs.notif.style.opacity='0'; setTimeout(()=>refs.notif.style.display='none',200); }, ms);
+  if (!refs.board || !refs.elementGrid) {
+    console.error("Chemicraft: missing essential DOM elements");
+    return;
   }
 
-  function findItem(sym){ return window.items.find(i=>i.sym===sym); }
-  function findRecipe(a,b){
-    for(const r of window.recipes){
-      const ins = r.inputs.map(x=>String(x));
-      if(ins.includes(a) && ins.includes(b)) return r.output;
+  // ===== State =====
+  let spawned = [];
+  let nodeId = 0;
+  let isDragging = false;
+  let audioCtx = null;
+  let soundEnabled = localStorage.getItem("soundEnabled") !== "false";
+  let showTips = localStorage.getItem("showTips") !== "false";
+
+  // ===== Utilities =====
+  const notify = (msg, ms = 1200) => {
+    refs.notif.textContent = msg;
+    refs.notif.style.display = "block";
+    refs.notif.style.opacity = 1;
+    clearTimeout(notify._t);
+    notify._t = setTimeout(() => {
+      refs.notif.style.opacity = 0;
+      setTimeout(() => (refs.notif.style.display = "none"), 200);
+    }, ms);
+  };
+
+  const findItem = sym => items.find(i => i.sym === sym);
+  const findRecipe = (a, b) => {
+    for (const r of recipes) {
+      const ins = r.inputs.map(x => String(x));
+      if (ins.includes(a) && ins.includes(b)) return r.output;
     }
     return null;
+  };
+
+  // ===== Audio =====
+  function initAudio() {
+    if (audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
 
-  // render toolbar
-  function renderToolbar(){
-    refs.elementGrid.innerHTML = '';
-    const q = (refs.search?.value||'').toLowerCase();
-    const cat = (refs.category?.value) || 'All';
-    const list = window.items.slice().sort((a,b)=>(a.unlocked===b.unlocked)?0:(a.unlocked?-1:1));
-    for(const it of list){
-      if(cat!=='All' && it.category !== cat) continue;
-      if(q && !((it.sym+it.name).toLowerCase().includes(q))) continue;
-      const el = document.createElement('div');
-      el.className = 'elem' + (it.unlocked ? '' : ' locked');
-      el.innerHTML = `<div style="text-align:center"><div style="font-size:22px">${it.emoji||it.sym}</div><div style="font-size:12px;margin-top:4px;color:var(--muted)">${it.name}</div></div>`;
+  function playSound(type) {
+    if (!soundEnabled) return;
+    if (!audioCtx)
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    if (type === "click") {
+      const s = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      s.type = "triangle";
+      s.frequency.value = 700;
+      g.gain.value = 0.002;
+      s.connect(g);
+      g.connect(audioCtx.destination);
+      s.start();
+      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.25);
+      setTimeout(() => s.stop(), 300);
+    }
+
+    if (type === "fizz") {
+      const buffer = audioCtx.createBuffer(
+        1,
+        audioCtx.sampleRate * 0.15,
+        audioCtx.sampleRate
+      );
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      const src = audioCtx.createBufferSource();
+      src.buffer = buffer;
+      const g = audioCtx.createGain();
+      g.gain.value = 0.05;
+      src.connect(g);
+      g.connect(audioCtx.destination);
+      src.start();
+      setTimeout(() => src.stop(), 150);
+    }
+  }
+
+  // ===== Toolbar =====
+  function renderToolbar() {
+    refs.elementGrid.innerHTML = "";
+    const q = (refs.search.value || "").toLowerCase();
+    const cat = refs.category.value || "All";
+
+    const list = items.slice().sort((a, b) =>
+      a.unlocked === b.unlocked ? 0 : a.unlocked ? -1 : 1
+    );
+
+    list.forEach(it => {
+      if (cat !== "All" && it.category !== cat) return;
+      if (
+        q &&
+        !(
+          it.sym.toLowerCase().includes(q) ||
+          it.name.toLowerCase().includes(q)
+        )
+      )
+        return;
+
+      const el = document.createElement("div");
+      el.className = "elem" + (it.unlocked ? "" : " locked");
+      el.innerHTML = `
+        <div style="text-align:center;">
+          <div style="font-size:22px;">${it.emoji || it.sym}</div>
+          <div style="font-size:11px;margin-top:2px;color:var(--muted)">${
+            it.sym
+          }</div>
+        </div>`;
       el.title = it.name;
-      el.addEventListener('click', (ev)=>{
-        ev.stopPropagation();
-        if(!it.unlocked){ notify('Locked — discover via reactions'); return; }
+      el.addEventListener("click", e => {
+        e.stopPropagation();
+        if (!it.unlocked) {
+          notify("Locked — discover via reactions");
+          return;
+        }
         spawnNode(it);
       });
       refs.elementGrid.appendChild(el);
-    }
-  }
-
-  // achievements
-  function renderAchievements(){
-    if(!refs.discoveredList) return;
-    refs.discoveredList.innerHTML = '';
-    const discovered = window.items.filter(i=>i.unlocked && i.category === 'Compounds');
-    if(!discovered.length){ refs.discoveredList.innerHTML = '<div style="color:var(--muted)">No compounds discovered yet.</div>'; return; }
-    discovered.forEach(d=>{
-      const c = document.createElement('div'); c.className='chip'; c.textContent = `${d.emoji||d.sym} ${d.name}`;
-      refs.discoveredList.appendChild(c);
     });
   }
 
-  // spawn node (center)
-  function spawnNode(item){
-    if(!item) return;
-    const node = document.createElement('div');
-    node.className = 'node' + (item.category==='Compounds' ? ' compound' : '');
+  // ===== Spawning =====
+  function spawnNode(item) {
+    if (!item) return;
+    const node = document.createElement("div");
+    node.className = "node";
     node.dataset.sym = item.sym;
-    node.dataset.name = item.name;
-    node.dataset.id = ++idCounter;
-    node.innerHTML = `<div class="node-emoji">${item.emoji||item.sym}</div><div class="node-label">${item.name}</div>`;
-    // center spawn with small jitter
+    node.dataset.id = ++nodeId;
+    node.innerHTML = `
+      <div class="node-emoji">${item.emoji || "🧪"}</div>
+      <div class="node-label">${item.name || item.sym}</div>
+    `;
     const br = refs.board.getBoundingClientRect();
-    const jitterX = (Math.random()-0.5)*40;
-    const jitterY = (Math.random()-0.5)*40;
-    node.style.left = Math.max(6, br.width/2 - 36 + jitterX) + 'px';
-    node.style.top  = Math.max(6, br.height/2 - 36 + jitterY) + 'px';
-    // apply "always show names" if set
-    if(localStorage.getItem('alwaysShowNames') === 'true') node.classList.add('show-name');
-
-    // attach pointerdown for drag
-    node.addEventListener('pointerdown', nodePointerDown);
+    node.style.left = `${br.width / 2 - 36}px`;
+    node.style.top = `${br.height / 2 - 36}px`;
     refs.board.appendChild(node);
+    enableDrag(node);
     spawned.push(node);
-    clickSound();
-    return node;
+    playSound("click");
   }
 
-  // pointer handlers for robust dragging
-  function nodePointerDown(ev){
-    ev.preventDefault();
-    const node = ev.currentTarget;
-    try{ node.setPointerCapture(ev.pointerId); }catch(e){}
-    const rect = node.getBoundingClientRect();
-    dragState = { node, pointerId:ev.pointerId, ox: ev.clientX - rect.left, oy: ev.clientY - rect.top, startX:ev.clientX, startY:ev.clientY, moved:false };
-    node.style.zIndex = 9999;
-  }
+  // ===== Dragging =====
+  function enableDrag(node) {
+    let active = false,
+      pid = null,
+      ox = 0,
+      oy = 0;
 
-  window.addEventListener('pointermove', (ev)=>{
-    if(!dragState || ev.pointerId !== dragState.pointerId) return;
-    const node = dragState.node;
-    const br = refs.board.getBoundingClientRect();
-    let x = ev.clientX - br.left - dragState.ox;
-    let y = ev.clientY - br.top - dragState.oy;
-    x = Math.max(0, Math.min(br.width - node.offsetWidth, x));
-    y = Math.max(0, Math.min(br.height - node.offsetHeight, y));
-    node.style.left = x + 'px';
-    node.style.top = y + 'px';
-    const dx = ev.clientX - dragState.startX;
-    const dy = ev.clientY - dragState.startY;
-    if(!dragState.moved && Math.sqrt(dx*dx + dy*dy) > 6) dragState.moved = true;
-  }, { passive:false });
+    node.addEventListener("pointerdown", ev => {
+      ev.preventDefault();
+      node.setPointerCapture(ev.pointerId);
+      active = true;
+      pid = ev.pointerId;
+      const r = node.getBoundingClientRect();
+      const br = refs.board.getBoundingClientRect();
+      ox = ev.clientX - r.left;
+      oy = ev.clientY - r.top;
+      node.style.transition = "none";
+      node.style.zIndex = 9999;
+    });
 
-  window.addEventListener('pointerup', (ev)=>{
-    if(!dragState || ev.pointerId !== dragState.pointerId) return;
-    const node = dragState.node;
-    try{ node.releasePointerCapture(ev.pointerId); }catch(e){}
-    node.style.zIndex = '';
-    if(!dragState.moved){
-      // tap (toggle label)
-      node.classList.toggle('show-name');
-    } else {
-      // drag ended — check combine
+    node.addEventListener("pointermove", ev => {
+      if (!active || ev.pointerId !== pid) return;
+      isDragging = true;
+      const br = refs.board.getBoundingClientRect();
+      let x = ev.clientX - br.left - ox;
+      let y = ev.clientY - br.top - oy;
+      x = Math.max(0, Math.min(br.width - node.offsetWidth, x));
+      y = Math.max(0, Math.min(br.height - node.offsetHeight, y));
+      node.style.left = x + "px";
+      node.style.top = y + "px";
+    });
+
+    node.addEventListener("pointerup", ev => {
+      if (ev.pointerId !== pid) return;
+      active = false;
+      pid = null;
+      node.style.transition = "transform 0.1s ease";
+      node.style.zIndex = "";
+      setTimeout(() => (isDragging = false), 60);
       checkCombine(node);
-    }
-    setTimeout(()=> dragState = null, 20);
-  });
+    });
 
-  window.addEventListener('pointercancel', (ev)=>{
-    if(!dragState || ev.pointerId !== dragState.pointerId) return;
-    try{ dragState.node.releasePointerCapture(ev.pointerId); }catch(e){}
-    dragState.node.style.zIndex = '';
-    dragState = null;
-  });
+    node.addEventListener("pointercancel", () => {
+      active = false;
+      pid = null;
+      isDragging = false;
+      node.style.zIndex = "";
+    });
+  }
 
-  // combine detection (distance threshold)
-  function checkCombine(node){
+  // ===== Combination =====
+  function checkCombine(node) {
     const r1 = node.getBoundingClientRect();
-    for(const other of spawned.slice()){
-      if(other === node) continue;
+    for (const other of spawned.slice()) {
+      if (other === node) continue;
       const r2 = other.getBoundingClientRect();
-      const dx = (r1.left + r1.width/2) - (r2.left + r2.width/2);
-      const dy = (r1.top + r1.height/2) - (r2.top + r2.height/2);
-      const dist = Math.sqrt(dx*dx + dy*dy);
-      if(dist < 60){
-        const a = node.dataset.sym;
-        const b = other.dataset.sym;
-        const res = findRecipe(a,b) || findRecipe(b,a);
-        if(res){
-          spawnSpark((r1.left + r2.left)/2 + r1.width/2, (r1.top + r2.top)/2 + r1.height/2);
-          node.remove(); other.remove();
+      const dx = r1.left + r1.width / 2 - (r2.left + r2.width / 2);
+      const dy = r1.top + r1.height / 2 - (r2.top + r2.height / 2);
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 50) {
+        const res =
+          findRecipe(node.dataset.sym, other.dataset.sym) ||
+          findRecipe(other.dataset.sym, node.dataset.sym);
+        if (res) {
+          playSound("fizz");
+          spawnSpark((r1.left + r2.left) / 2 + 36, (r1.top + r2.top) / 2 + 36);
+          node.remove();
+          other.remove();
           spawned = spawned.filter(n => n !== node && n !== other);
           applyRecipe(res);
           return;
         } else {
-          // small feedback
-          node.animate([{ transform:'scale(1.06)' }, { transform:'scale(1)' }], { duration:180 });
-          other.animate([{ transform:'scale(1.06)' }, { transform:'scale(1)' }], { duration:180 });
-          notify('No reaction',700);
+          notify("No reaction", 700);
+          node.animate(
+            [{ transform: "scale(1.1)" }, { transform: "scale(1)" }],
+            { duration: 200 }
+          );
           return;
         }
       }
     }
   }
 
-  function applyRecipe(outputSym){
-    let prod = findItem(outputSym);
-    if(!prod){
-      prod = { sym: outputSym, name: outputSym, emoji:'✨', category:'Compounds', unlocked:true };
-      window.items.push(prod);
-    } else if(!prod.unlocked){
+  // ===== Reaction Output =====
+  function applyRecipe(sym) {
+    let prod = findItem(sym);
+    if (!prod) {
+      prod = {
+        sym,
+        emoji: "✨",
+        name: sym,
+        category: "Compounds",
+        unlocked: true,
+      };
+      items.push(prod);
+    } else if (!prod.unlocked) {
       prod.unlocked = true;
-      if(window.saveUnlocks) window.saveUnlocks();
-      notify('Unlocked: ' + prod.name, 1200);
-    } else {
-      notify('Created: ' + prod.name, 800);
-    }
-    // spawn product
+      saveUnlocks();
+      notify("Unlocked: " + prod.sym, 1200);
+    } else notify("Created: " + prod.sym, 900);
     spawnNode(prod);
     renderToolbar();
     renderAchievements();
-    fizzSound();
   }
 
-  // small audio helpers
-  function ensureAudio(){
-    if(audioCtx) return;
-    try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ audioCtx = null; }
-  }
-  function clickSound(){
-    ensureAudio();
-    if(!audioCtx) return;
-    const s = audioCtx.createOscillator(); const g = audioCtx.createGain();
-    s.type='triangle'; s.frequency.value=900; g.gain.value = 0.0025;
-    s.connect(g); g.connect(audioCtx.destination);
-    s.start(); g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.22);
-    setTimeout(()=> s.stop(), 240);
-  }
-  function fizzSound(){
-    ensureAudio();
-    if(!audioCtx) return;
-    const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.12, audioCtx.sampleRate);
-    const d = buf.getChannelData(0);
-    for(let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * (1 - i/d.length);
-    const src = audioCtx.createBufferSource(); src.buffer = buf;
-    const g = audioCtx.createGain(); g.gain.value = 0.06;
-    src.connect(g); g.connect(audioCtx.destination); src.start();
-  }
-
-  // spark visual
-  function spawnSpark(x,y){
-    const s = document.createElement('div'); s.className = 'spark'; s.style.left = x + 'px'; s.style.top = y + 'px';
+  // ===== Spark Effect =====
+  function spawnSpark(x, y) {
+    const s = document.createElement("div");
+    s.className = "spark";
+    s.style.left = x + "px";
+    s.style.top = y + "px";
     document.body.appendChild(s);
-    try{ s.animate([{ transform:'scale(0.4)', opacity:1 }, { transform:'scale(2.4)', opacity:0 }], { duration:420, easing:'ease-out' }); }catch(e){}
-    setTimeout(()=> s.remove(), 460);
+    s.animate(
+      [
+        { transform: "scale(0.5)", opacity: 1 },
+        { transform: "scale(2.4)", opacity: 0 },
+      ],
+      { duration: 400, easing: "ease-out" }
+    );
+    setTimeout(() => s.remove(), 420);
   }
 
-  // UI events
-  refs.openToolbar?.addEventListener('click', e => { e.stopPropagation(); refs.toolbar.classList.toggle('open'); renderToolbar(); });
-  refs.openAchievements?.addEventListener('click', e => { e.stopPropagation(); if(!refs.achievementsPanel) return; refs.achievementsPanel.style.display = (refs.achievementsPanel.style.display==='block')?'none':'block'; if(refs.achievementsPanel.style.display==='block') renderAchievements(); });
-  refs.openSettings?.addEventListener('click', e => { e.stopPropagation(); if(!refs.settingsPanel) return; refs.settingsPanel.style.display = (refs.settingsPanel.style.display==='block')?'none':'block'; });
-  document.addEventListener('click', e => {
-    if(dragState) return; // avoid auto-close while dragging
-    if(refs.toolbar && !refs.toolbar.contains(e.target) && e.target !== refs.openToolbar) refs.toolbar.classList.remove('open');
-    if(refs.achievementsPanel && !refs.achievementsPanel.contains(e.target) && e.target !== refs.openAchievements) refs.achievementsPanel.style.display='none';
-    if(refs.settingsPanel && !refs.settingsPanel.contains(e.target) && e.target !== refs.openSettings) refs.settingsPanel.style.display='none';
+  // ===== Achievements =====
+  function renderAchievements() {
+    refs.discoveredList.innerHTML = "";
+    const discovered = items.filter(
+      i => i.unlocked && i.category === "Compounds"
+    );
+    if (!discovered.length) {
+      refs.discoveredList.innerHTML =
+        '<div style="color:var(--muted)">No compounds discovered yet.</div>';
+      return;
+    }
+    discovered.forEach(d => {
+      const chip = document.createElement("div");
+      chip.className = "chip";
+      chip.textContent = `${d.emoji || d.sym} ${d.sym}`;
+      refs.discoveredList.appendChild(chip);
+    });
+  }
+
+  // ===== Settings =====
+  function renderSettings() {
+    refs.soundToggle.checked = soundEnabled;
+    refs.tipsToggle.checked = showTips;
+
+    refs.soundToggle.addEventListener("change", e => {
+      soundEnabled = e.target.checked;
+      localStorage.setItem("soundEnabled", soundEnabled);
+      notify(soundEnabled ? "Sound enabled" : "Sound muted", 800);
+    });
+
+    refs.tipsToggle.addEventListener("change", e => {
+      showTips = e.target.checked;
+      localStorage.setItem("showTips", showTips);
+      notify(showTips ? "Tips on" : "Tips hidden", 800);
+    });
+  }
+
+  // ===== Events =====
+  refs.openToolbarBtn.addEventListener("click", () => {
+    refs.toolbar.classList.toggle("open");
+    renderToolbar();
   });
 
-  refs.search?.addEventListener('input', renderToolbar);
-  refs.category?.addEventListener('change', renderToolbar);
-  refs.clearBoard?.addEventListener('click', ()=>{ spawned.forEach(n=>n.remove()); spawned = []; notify('Board cleared'); });
+  refs.clearBoardBtn.addEventListener("click", () => {
+    spawned.forEach(n => n.remove());
+    spawned = [];
+    notify("Board cleared", 800);
+  });
 
-  // init
+  refs.settingsBtn.addEventListener("click", () => {
+    refs.settingsPanel.classList.toggle("open");
+    renderSettings();
+  });
+
+  document.addEventListener("click", e => {
+    if (isDragging) return;
+    if (!refs.toolbar.contains(e.target) && e.target !== refs.openToolbarBtn)
+      refs.toolbar.classList.remove("open");
+  });
+
+  refs.search.addEventListener("input", renderToolbar);
+  refs.category.addEventListener("change", renderToolbar);
+
+  // ===== Init =====
+  document.addEventListener("pointerdown", () => initAudio(), { once: true });
   renderToolbar();
   renderAchievements();
+  renderSettings();
 
-  // expose helper for settings.js
-  window.chemicraft = {
-    spawnNode, renderToolbar, renderAchievements,
-    showAllNames: (on) => { document.querySelectorAll('.node').forEach(n=>{ if(on) n.classList.add('show-name'); else n.classList.remove('show-name'); }); }
-  };
+  // expose
+  window.chemicraft = { spawnNode, renderToolbar, renderAchievements };
 })();
