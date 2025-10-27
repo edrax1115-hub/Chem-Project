@@ -152,11 +152,12 @@
       ev.preventDefault();
       try { node.setPointerCapture(ev.pointerId); } catch(e) {}
       const rect = node.getBoundingClientRect();
+      const br = board.getBoundingClientRect();
       dragState = {
         node,
         pid: ev.pointerId,
-        ox: ev.clientX - rect.left,
-        oy: ev.clientY - rect.top,
+        ox: ev.clientX - (rect.left - br.left),
+        oy: ev.clientY - (rect.top - br.top),
         startX: ev.clientX,
         startY: ev.clientY,
         moved: false
